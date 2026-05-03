@@ -6,7 +6,8 @@ const withMDX = createMDX();
 const config = {
   output: 'export',
   reactStrictMode: true,
-  allowedDevOrigins: ['192.168.2.213']
+  allowedDevOrigins: ['192.168.2.213'],
+  images: { unoptimized: true }
 };
 
 export default withMDX(config);

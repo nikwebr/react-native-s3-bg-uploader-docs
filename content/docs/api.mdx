@@ -1,7 +1,56 @@
 ---
 title: API
-description: Your first document
+description: Functions and types exposed by this library
 ---
 
+## NativeS3BgUploaderAPI
+<auto-type-table path="../../test/s3-bg-uploader.types.ts" name="NativeS3BgUploaderAPI" />
+
+## WebS3BgUploaderAPI
+<auto-type-table path="../../test/s3-bg-uploader.types.ts" name="WebS3BgUploaderAPI" />
+
+## UploadProgress
 <auto-type-table path="../../test/s3-bg-uploader.types.ts" name="UploadProgress" />
-<auto-type-table path="../../test/s3-bg-uploader.types.ts" name="S3BgUploaderAPI" />
+
+## AggregateProgress
+<auto-type-table path="../../test/s3-bg-uploader.types.ts" name="AggregateProgress" />
+
+## ProgressCallback
+```ts
+type ProgressCallback = (
+  fileProgress: UploadProgress,
+  sessionAggregate: AggregateProgress,
+  transferAggregate: AggregateProgress,
+) => void
+```
+
+| Parameter             | Type                  | Description                                                                       |
+| --------------------- | --------------------- | --------------------------------------------------------------------------------- |
+| `fileProgress`        | `UploadProgress`      | Progress of the individual file that triggered the progress event                 |
+| `sessionAggregate`    | `AggregateProgress`   | Aggregate progress across all files in the session                                |
+| `transferAggregate`   | `AggregateProgress`   | Aggregate progress for all files sharing the same `transferId` as `fileProgress`  |
+
+
+## UploadState
+| State                     | Description                                                                                                                   |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `NOT_STARTED`             | File hash is calculated & file is enqueued for upload                                                                         |
+| `INITIALIZED`             | `startUpload` [endpoint](https://uploader.ysendit.com/docs/backend#startUpload) was called                                    |
+| `RUNNING`                 | File is currently uploading                                                                                                   |
+| `PAUSED`                  | File is currently uploading but upload of this file is paused                                                                 |
+| `COMPLETED`               | File has been completely uploaded & `complete` [endpoint](https://uploader.ysendit.com/docs/backend#complete) was called      |
+| `FAILED`                  | Processing or upload failed for this file. Can be retried by calling `resume()`                                               |
+| `CANCELLED`               | File was cancelled. Will no longer be returned from any API                                                                   |
+
+## GlobalUploaderState
+| State                     | Description                                                                                                                                       |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NOT_STARTED`             | Initial state of a new session. To start uploading, call `resume()`                                                                               |
+| `RUNNING`                 | At least one file is currently uploading                                                                                                          |
+| `RUNNING_IN_BG`           | At least one file is currently uploading. The uploader is running in background                                                                   |
+| `PAUSED`                  | At least one file is not completely uploaded but upload is currenlty paused                                                                       |
+| `COMPLETED`               | All files have been completely uploaded & `complete` [endpoint](https://uploader.ysendit.com/docs/backend#complete) was called for every file     |
+| `FAILED`                  | Processing or upload failed for at least one file. Can be retried by calling `resume()`                                                           |
+
+## S3BgUploaderResumeError
+<auto-type-table path="../../test/s3-bg-uploader.types.ts" name="S3BgUploaderResumeError" />

@@ -2,6 +2,7 @@ export const appName = 'react-native-s3-bg-uploader';
 export const docsRoute = '/docs';
 export const docsImageRoute = '/og/docs';
 export const docsContentRoute = '/llms.mdx/docs';
+export const version = "0.1.0";
 
 // fill this with your actual GitHub info, for example:
 export const gitConfig = {

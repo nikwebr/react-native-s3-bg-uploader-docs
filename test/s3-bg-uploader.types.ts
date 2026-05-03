@@ -1,4 +1,12 @@
-export type UploadState = 'NOT_STARTED' | 'RUNNING' | 'PAUSED' | 'COMPLETED' | 'FAILED'
+export class S3BgUploaderResumeError extends Error {
+  override readonly name = 'S3BgUploaderResumeError'
+  constructor(message: string) {
+    super(message)
+    Object.setPrototypeOf(this, S3BgUploaderResumeError.prototype)
+  }
+}
+
+export type UploadState = 'NOT_STARTED' | 'INITIALIZED' | 'RUNNING' | 'PAUSED' | 'COMPLETED' | 'FAILED' | 'CANCELLED'
 export type GlobalUploaderState =
   | 'NOT_STARTED'
   | 'RUNNING_IN_BG'
@@ -8,12 +16,18 @@ export type GlobalUploaderState =
   | 'FAILED'
 
 export interface UploadProgress {
-  /** S3 key returned by uploadFile() — the public identifier for this file. */
-  fileKey: string
+  /** uniquely identifies a file. Returned by startUpload. Is undefined until file is in `INITIALIZED` [state](https://uploader.ysendit.com/docs/api#UploadState). */
+  fileKey?: string
+  /** original file name */
+  fileName: string
+  /** xxHash of the file */
+  fileHash: string
   transferId: string
   totalBytes: number
   uploadedBytes: number
+  /** Count of completed part uploads for this file */
   completedParts: number
+  /** Total count of parts for this file */
   totalParts: number
   /** Percentage for this individual file (0–100). */
   percentage: number
@@ -26,6 +40,7 @@ export interface AggregateProgress {
   uploadedSize: number
   /** Absent when scoped to a single transfer. */
   totalTransfers?: number
+  /** Absent when scoped to a single transfer. */
   completedTransfers?: number
   totalFiles: number
   completedFiles: number
@@ -41,23 +56,15 @@ export type ProgressCallback = (
 
 interface BaseUploaderAPI {
   /**
-   * Set the three backend endpoint URLs.
-   * Must be called before any uploadFile() call.
+   * Resume all files that are not in `COMPLETED` [state](https://uploader.ysendit.com/docs/api#UploadState).
+   * Must be called to start the upload.
+   * 
+   * Throws `S3BgUploaderResumeError` if any file in the session has not yet been re-provided via `uploadFile()` after a restart.
    */
-  setConfig(startUploadApi: string, getUploadUrlsApi: string, completeApi: string): void
+  resume(): Promise<void>
 
-  setProgressCallback(callback: ProgressCallback | null): void
-
-  /**
-   * Set the notification title template.
-   * Placeholders: {percentage} {totalSize} {uploadedSize}
-   *               {totalTransfers} {completedTransfers}
-   *               {totalFiles} {completedFiles}
-   */
-  setTaskTitle(title: string): void
-
-  /** Same placeholders as setTaskTitle. */
-  setTaskSubtitle(subtitle: string): void
+  /** Pause all running uploads. */
+  pause(): void
 
   /** Cancel a single file by its S3 fileKey. */
   cancelFile(fileKey: string): void
@@ -65,40 +72,64 @@ interface BaseUploaderAPI {
   /** Cancel all files in a transfer. */
   cancelTransfer(transferId: string): void
 
-  /** Cancel everything and wipe session state. */
+  /** Cancel all files and wipe session state. After that, a file upload can not be restored */
   cancel(): void
 
-  /** Pause all running uploads. */
-  pause(): void
+  /**
+   * Set the backend http endpoints.
+   * The endpoints must accept and return the data documented [here](https://uploader.ysendit.com/docs/backend)
+   * Must be called before calling `resume()`.
+   */
+  setConfig(startUploadApi: string, getUploadUrlsApi: string, completeApi: string): void
 
   /**
-   * Resume all paused / failed uploads.
-   * On native platforms, the caller must re-call uploadFile() with a fresh
-   * file reference when the file is no longer accessible.
+   * Set a callback that receives progress events.
    */
-  resume(): void
+  setProgressCallback(callback: ProgressCallback | null): void
 
+  /**
+   * Set the notification title template.
+   * On iOS this text gets clipped if too long.
+   * 
+   * Placeholders: `{percentage}`, `{totalSize}`, `{uploadedSize}`,
+   *               `{totalTransfers}`, `{completedTransfers}`,
+   *               `{totalFiles}`, `{completedFiles}`
+   */
+  setTaskTitle(title: string): void
+
+  /**
+   * Set the notification subtitle template.
+   * On iOS this text gets clipped if too long.
+   * 
+   * Placeholders: `{percentage}`, `{totalSize}`, `{uploadedSize}`,
+   *               `{totalTransfers}`, `{completedTransfers}`,
+   *               `{totalFiles}`, `{completedFiles}`
+   */
+  setTaskSubtitle(subtitle: string): void
 }
 
 export interface S3BgUploaderAPI extends BaseUploaderAPI {
   /**
-   * Enqueue a file for upload.
-   * @returns S3 fileKey (from startUploadApi response).
-   *          Returns immediately — upload runs in the background.
-   *          If the same file (same SHA-256 + transferId) is already COMPLETED,
-   *          the existing fileKey is returned and no upload is started.
+   * Enqueue a file for upload. 
+   * @param userParams these params are added to the `startUpload()` backend call
+   * @param transferId group files in transfers to get aggregated progress reporting
+   * @returns xxHash of the file.
+   *          If the same file (same xxHash + transferId) is already in COMPLETED [state](https://uploader.ysendit.com/docs/api#UploadState),
+   *          the existing hash is returned and no upload is started.
    */
   uploadFile(
     file: string | File,
     transferId: string,
     userParams?: Record<string, string>,
-  ): string
+  ): Promise<string>
+
   /**
    * Returns per-file progress, optionally filtered.
    * @param transferId  Only return files in this transfer.
    * @param fileKey     Only return the entry for this fileKey.
    */
   getProgress(transferId?: string, fileKey?: string): UploadProgress[]
+  
   /**
    * Returns aggregate progress for the whole session, or just one transfer.
    * @param transferId  Scope to this transfer (omits totalTransfers / completedTransfers).
@@ -107,21 +138,60 @@ export interface S3BgUploaderAPI extends BaseUploaderAPI {
 }
 
 export interface NativeS3BgUploaderAPI extends BaseUploaderAPI {
+  /**
+   * Enqueue a file for upload. 
+   * @param userParams these params are added to the `startUpload()` backend call
+   * @param transferId group files in transfers to get aggregated progress reporting
+   * @returns xxHash of the file.
+   *          If the same file (same xxHash + transferId) is already in COMPLETED [state](https://uploader.ysendit.com/docs/api#UploadState),
+   *          the existing hash is returned and no upload is started.
+   */
   uploadFile(
     filePath: string,
     transferId: string,
     userParams?: Record<string, string>,
-  ): string
+  ): Promise<string>
+
+  /**
+   * Returns per-file progress, optionally filtered.
+   * @param transferId  Only return files in this transfer.
+   * @param fileKey     Only return the entry for this fileKey.
+   */
   getProgress(transferId?: string, fileKey?: string): UploadProgress[]
+
+  /**
+   * Returns aggregate progress for the whole session, or just one transfer.
+   * @param transferId  Scope to this transfer (omits totalTransfers / completedTransfers).
+   */
   getAggregateProgress(transferId?: string): AggregateProgress
 }
 
 export interface WebS3BgUploaderAPI extends BaseUploaderAPI {
+  /**
+   * Enqueue a file for upload. 
+   * 
+   * @param userParams these params are added to the `startUpload()` backend call
+   * @param transferId group files in transfers to get aggregated progress reporting
+   * @returns xxHash of the file.
+   *          If the same file (same xxHash + transferId) is already in COMPLETED [state](https://uploader.ysendit.com/docs/api#UploadState),
+   *          the existing hash is returned and no upload is started.
+   */
   uploadFile(
     file: File,
     transferId: string,
     userParams?: Record<string, string>,
   ): Promise<string>
+
+  /**
+   * Returns per-file progress, optionally filtered.
+   * @param transferId  Only return files in this transfer.
+   * @param fileKey     Only return the entry for this fileKey.
+   */
   getProgress(transferId?: string, fileKey?: string): Promise<UploadProgress[]>
+
+  /**
+   * Returns aggregate progress for the whole session, or just one transfer.
+   * @param transferId  Scope to this transfer (omits totalTransfers / completedTransfers).
+   */
   getAggregateProgress(transferId?: string): Promise<AggregateProgress>
 }

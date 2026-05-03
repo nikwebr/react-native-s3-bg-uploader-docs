@@ -1,45 +1,45 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/homepage/ui/card"
-import { Pause, Play, Moon, Link2, Shield, Zap } from "lucide-react"
+import { Pause, Play, Moon, Link2, Shield, Loader, Component } from "lucide-react"
 
 const features = [
   {
     icon: Moon,
     title: "True Background Uploads",
     description:
-      "Uploads continue even when your app is backgrounded or the screen is locked. Native implementation for iOS and Android.",
+      "Uploads continue when your app is backgrounded or the screen is locked. Native implementation for iOS and Android.",
   },
   {
     icon: Pause,
     title: "Pause & Resume",
     description:
-      "Full control over your uploads. Pause when needed, resume exactly where you left off. Perfect for large files.",
+      "Full control over your uploads. Pause when needed, resume exactly where you left off. Continue uploads even after restarting your device or browser.",
   },
   {
-    icon: Link2,
-    title: "Presigned URL Support",
-    description:
-      "Direct uploads to S3 using presigned URLs. No need to proxy through your server. Secure and efficient.",
-  },
-  {
-    icon: Shield,
-    title: "S3 API Compatible",
-    description:
-      "Works with Amazon S3, MinIO, DigitalOcean Spaces, Backblaze B2, and any S3-compatible storage.",
-  },
-  {
-    icon: Zap,
+    icon: Component,
     title: "Multipart Uploads",
     description:
       "Large files are automatically split into parts for faster, more reliable uploads with automatic retry.",
   },
   {
-    icon: Play,
+    icon: Loader,
     title: "Progress Tracking",
     description:
-      "Real-time progress updates with bytes transferred, speed estimation, and time remaining calculations.",
+      "Real-time progress updates with relevant data. On native platforms, a progress notification is shown.",
   },
+    {
+    icon: Shield,
+    title: "Presigned URL Support",
+    description:
+      "You provide the upload urls to the library. In your backend, you can generate presigned urls.",
+  },
+  {
+    icon: Link2,
+    title: "S3 API Compatible",
+    description:
+      "Works with Amazon S3, MinIO, DigitalOcean Spaces, Backblaze B2, and any other S3-compatible storage.",
+  }
 ]
 
 export function FeaturesSection() {
@@ -51,8 +51,7 @@ export function FeaturesSection() {
             Everything you need for reliable uploads
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Built from the ground up for React Native with native modules for iOS and Android,
-            plus web support.
+            Written in <span className="text-foreground font-medium">Rust</span> — compiled to native modules on iOS and Android, and to WebAssembly for the web.
           </p>
         </div>
 

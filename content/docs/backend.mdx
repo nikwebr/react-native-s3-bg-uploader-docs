@@ -1,0 +1,139 @@
+---
+title: Backend Endpoints
+description: Three endpoints your backend must implement for the library to work
+---
+
+For each file, the library calls the endpoints below.
+Configure the endpoints to use by calling `setConfig` via the [API reference](/docs/api).
+
+## startUpload
+
+<div className="not-prose flex items-center gap-2 font-mono text-sm px-3 py-2 rounded-lg border bg-card w-fit my-4">
+  <span className="text-xs font-semibold bg-primary/15 text-primary px-2 py-0.5 rounded">POST</span>
+  <span className="text-muted-foreground">{`{startUploadApi}/`}</span>
+</div>
+
+Initiates a multipart upload for a single file.
+
+**Request Body (JSON)**
+
+```json
+{
+  "fileName": "video.mp4",
+  "fileHash": "a1b2c3d4e5f6...",
+  "fileSize": 104857600,
+  ...userParams
+}
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `fileName` | `string` | Original file name |
+| `fileHash` | `string` | xxHash of the file |
+| `fileSize` | `number` | File size in bytes |
+| `...userParams` | `object` | Any additional params you passed via `uploadFile`, merged flat into the body |
+
+**Response (JSON)**
+
+```json
+{
+  "key": "uploads/abc123/video.mp4",
+  "uploadId": "VXBsb2FkSWQ...",
+  "partSize": 10485760
+}
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `key` | `string` | Object key to use for all subsequent calls |
+| `uploadId` | `string` | Upload ID for this file |
+| `partSize` | `number` | Part size the uploader should use |
+
+---
+
+## getUploadUrls
+
+<div className="not-prose flex items-center gap-2 font-mono text-sm px-3 py-2 rounded-lg border bg-card w-fit my-4">
+  <span className="text-xs font-semibold bg-primary/15 text-primary px-2 py-0.5 rounded">POST</span>
+  <span className="text-muted-foreground">{`{getUploadUrlsApi}/`}</span>
+</div>
+
+Returns presigned S3 URLs for a set of parts.
+
+**Request Body (JSON)**
+
+```json
+{
+  "key": "uploads/abc123/video.mp4",
+  "uploadId": "VXBsb2FkSWQ...",
+  "parts": [1, 2, 3, 4]
+}
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `key` | `string` | S3 object key from `startUpload` |
+| `uploadId` | `string` | Multipart upload ID from `startUpload` |
+| `parts` | `number[]` | Part numbers to get URLs for |
+
+**Response (JSON)**
+
+```json
+{
+  "urls": {
+    "1": "https://bucket.s3.amazonaws.com/...?partNumber=1&...",
+    "2": "https://bucket.s3.amazonaws.com/...?partNumber=2&...",
+    "3": "...",
+    "4": "..."
+  }
+}
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `urls` | `Record<string, string>` | Map of part number → presigned URL |
+
+---
+
+## upload 
+
+<div className="not-prose flex items-center gap-2 font-mono text-sm px-3 py-2 rounded-lg border bg-card w-fit my-4">
+  <span className="text-xs font-semibold bg-primary/15 text-primary px-2 py-0.5 rounded">PUT</span>
+  <span className="text-muted-foreground">{`{uploadUrl}/`}</span>
+</div>
+
+**Request Body**
+contains the file part
+
+**Response**
+Must provide an `Etag` header that identifies the uploaded part. This E-Tag will be re-provided by the library to the complete endpoint.
+
+## complete
+
+<div className="not-prose flex items-center gap-2 font-mono text-sm px-3 py-2 rounded-lg border bg-card w-fit my-4">
+  <span className="text-xs font-semibold bg-primary/15 text-primary px-2 py-0.5 rounded">POST</span>
+  <span className="text-muted-foreground">{`{completeApi}/`}</span><span>{`{uploadId}/{key}`}</span>
+</div>
+
+Finalizes the multipart upload after all parts have been uploaded.
+
+**Request Body (JSON)**
+
+```json
+{
+  "parts": [
+    { "PartNumber": 1, "ETag": "abc123..." },
+    { "PartNumber": 2, "ETag": "def456..." }
+  ]
+}
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `parts` | `Part[]` | List of completed parts, sorted by `PartNumber` |
+| `parts[].PartNumber` | `number` | Part number |
+| `parts[].ETag` | `string` | ETag returned by PUT upload response `Etag` header for that part |
+
+**Response**
+
+The response body is ignored. The library only expects an HTTP `2xx` status code.

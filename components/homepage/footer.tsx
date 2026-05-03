@@ -1,4 +1,6 @@
 import { Button } from "@/components/homepage/ui/button"
+import Image from 'next/image'
+import logo from '../../logo.png'
 
 export function Footer() {
   return (
@@ -8,9 +10,12 @@ export function Footer() {
           {/* Brand */}
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">BG</span>
-              </div>
+              <Image
+      src={logo}
+      width={35}
+      height={35}
+      alt="Logo"
+    />
               <span className="font-semibold text-foreground">react-native-s3-bg-uploader</span>
             </div>
             <p className="text-muted-foreground text-sm max-w-sm leading-relaxed">
