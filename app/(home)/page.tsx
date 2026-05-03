@@ -1,16 +1,21 @@
-import Link from 'next/link';
+import { HeroSection } from "@/components/homepage/hero-section"
+import { FeaturesSection } from "@/components/homepage/features-section"
+import { CodeExample } from "@/components/homepage/code-example"
+import { Footer } from "@/components/homepage/footer"
+import { Geist, Geist_Mono } from 'next/font/google'
+
+
+const _geist = Geist({ subsets: ["latin"] });
+const _geistMono = Geist_Mono({ subsets: ["latin"] });
+
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col justify-center text-center flex-1">
-      <h1 className="text-2xl font-bold mb-4">Hello World</h1>
-      <p>
-        You can open{' '}
-        <Link href="/docs" className="font-medium underline">
-          /docs
-        </Link>{' '}
-        and see the documentation.
-      </p>
-    </div>
+    <main className="absolute w-full h-full min-h-screen bg-background">
+      <HeroSection />
+      <FeaturesSection />
+      <CodeExample />
+      <Footer />
+    </main>
   );
 }

@@ -1,3 +1,8 @@
+import {
+  remarkAutoTypeTable,
+  createGenerator,
+  createFileSystemGeneratorCache,
+} from 'fumadocs-typescript';
 import { defineConfig, defineDocs } from 'fumadocs-mdx/config';
 import { metaSchema, pageSchema } from 'fumadocs-core/source/schema';
 
@@ -16,8 +21,16 @@ export const docs = defineDocs({
   },
 });
 
+const generator = createGenerator({
+  // recommended: choose a directory for cache
+  cache: createFileSystemGeneratorCache('.next/fumadocs-typescript'),
+});
+
 export default defineConfig({
   mdxOptions: {
-    // MDX options
+    remarkPlugins: [[remarkAutoTypeTable, { generator }]],
+    remarkStructureOptions: {
+      types: ['heading', 'paragraph', 'blockquote', 'tableCell', 'mdxJsxFlowElement', 'code', 'inlineCode']
+    },
   },
 });
