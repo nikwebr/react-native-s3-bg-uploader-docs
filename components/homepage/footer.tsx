@@ -1,6 +1,5 @@
-import { Button } from "@/components/homepage/ui/button"
 import Image from 'next/image'
-import logo from '../../logo.png'
+import logo from '../../icon.png'
 
 export function Footer() {
   return (
@@ -18,10 +17,13 @@ export function Footer() {
     />
               <span className="font-semibold text-foreground">react-native-s3-bg-uploader</span>
             </div>
-            <p className="text-muted-foreground text-sm max-w-sm leading-relaxed">
+            <p className="mb-5 text-muted-foreground text-sm max-w-sm leading-relaxed">
               Seamless file uploads that continue even when your app goes to background. 
               Open source and community driven.
             </p>
+            <a href="https://github.com/nikwebr/react-native-s3-bg-uploader" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  GitHub
+            </a>
           </div>
 
           {/* Links */}
