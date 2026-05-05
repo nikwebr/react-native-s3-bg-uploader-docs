@@ -1,13 +1,31 @@
 ---
-title: Hello World
-description: Your first document
+title: Getting started
 ---
 
 This library provides background uploads for iOS, Android and the web.
+On iOS, it uses the new BGContinuedProcessingTask API introduced in iOS 26. On Android, the library uses a foreground service.
 
-## What is Next?
+## Features
+- Multipart (chunked) `PUT` uploads
+- Pause & resume uploads
+- Continue uploads after app or browser restart
+- Handles network errors gracefully by pausing the upload after some retries
+- Progress callback & live progress notifications on iOS and Android
+- Transfer abstraction: Group files in transfers
+- Support for presigned urls & S3 API
 
-<Cards>
-  <Card title="Learn more about Next.js" href="https://nextjs.org/docs" />
-  <Card title="Learn more about Fumadocs" href="https://fumadocs.dev" />
-</Cards>
+## Requirements
+- React Native v0.76.0 or higher
+- Node 18.0.0 or higher
+
+### iOS
+- Background upload is only supported for iOS 26 or later
+- Enabled "background fetch" & "background processing" capabilities
+- Registered BGTaskSchedulerPermittedIdentifiers of value `$(PRODUCT_BUNDLE_IDENTIFIER).background` inside info.plist
+
+## Installation
+```bash
+npm i react-native-s3-bg-uploader react-native-nitro-modules
+```
+This library uses the `react-native-nitro-modules` framework for providing fast native modules for iOS and Android.
+Therefore this package must also be added as a dependency.

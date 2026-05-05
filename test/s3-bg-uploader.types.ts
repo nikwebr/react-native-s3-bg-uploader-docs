@@ -6,6 +6,14 @@ export class S3BgUploaderResumeError extends Error {
   }
 }
 
+export class S3BgUploaderDuplicateFileError extends Error {
+  override readonly name = 'S3BgUploaderDuplicateFileError'
+  constructor(message: string) {
+    super(message)
+    Object.setPrototypeOf(this, S3BgUploaderDuplicateFileError.prototype)
+  }
+}
+
 export type UploadState = 'NOT_STARTED' | 'INITIALIZED' | 'RUNNING' | 'PAUSED' | 'COMPLETED' | 'FAILED' | 'CANCELLED'
 export type GlobalUploaderState =
   | 'NOT_STARTED'
@@ -20,7 +28,7 @@ export interface UploadProgress {
   fileKey?: string
   /** original file name */
   fileName: string
-  /** xxHash of the file */
+  /** hash of the file */
   fileHash: string
   transferId: string
   totalBytes: number
@@ -66,8 +74,8 @@ interface BaseUploaderAPI {
   /** Pause all running uploads. */
   pause(): void
 
-  /** Cancel a single file by its S3 fileKey. */
-  cancelFile(fileKey: string): void
+  /** Cancel a single file by its hash. */
+  cancelFile(fileHash: string): void
 
   /** Cancel all files in a transfer. */
   cancelTransfer(transferId: string): void
@@ -110,12 +118,12 @@ interface BaseUploaderAPI {
 
 export interface S3BgUploaderAPI extends BaseUploaderAPI {
   /**
-   * Enqueue a file for upload. 
+   * Enqueue a file for upload. Can be called in any `GlobalUploaderState`.
+   * 
+   * throws `S3BgUploaderDuplicateFileError` if a file with the same hash is already part of the session
    * @param userParams these params are added to the `startUpload()` backend call
    * @param transferId group files in transfers to get aggregated progress reporting
-   * @returns xxHash of the file.
-   *          If the same file (same xxHash + transferId) is already in COMPLETED [state](https://uploader.ysendit.com/docs/api#UploadState),
-   *          the existing hash is returned and no upload is started.
+   * @returns hash of the file (considers file content, size & transferId)
    */
   uploadFile(
     file: string | File,
@@ -139,12 +147,12 @@ export interface S3BgUploaderAPI extends BaseUploaderAPI {
 
 export interface NativeS3BgUploaderAPI extends BaseUploaderAPI {
   /**
-   * Enqueue a file for upload. 
+   * Enqueue a file for upload. Can be called in any `GlobalUploaderState`.
+   * 
+   * throws `S3BgUploaderDuplicateFileError` if a file with the same hash is already part of the session
    * @param userParams these params are added to the `startUpload()` backend call
    * @param transferId group files in transfers to get aggregated progress reporting
-   * @returns xxHash of the file.
-   *          If the same file (same xxHash + transferId) is already in COMPLETED [state](https://uploader.ysendit.com/docs/api#UploadState),
-   *          the existing hash is returned and no upload is started.
+   * @returns hash of the file (considers file content, size & transferId)
    */
   uploadFile(
     filePath: string,
@@ -168,13 +176,12 @@ export interface NativeS3BgUploaderAPI extends BaseUploaderAPI {
 
 export interface WebS3BgUploaderAPI extends BaseUploaderAPI {
   /**
-   * Enqueue a file for upload. 
+   * Enqueue a file for upload. Can be called in any `GlobalUploaderState`.
    * 
+   * throws `S3BgUploaderDuplicateFileError` if a file with the same hash is already part of the session
    * @param userParams these params are added to the `startUpload()` backend call
    * @param transferId group files in transfers to get aggregated progress reporting
-   * @returns xxHash of the file.
-   *          If the same file (same xxHash + transferId) is already in COMPLETED [state](https://uploader.ysendit.com/docs/api#UploadState),
-   *          the existing hash is returned and no upload is started.
+   * @returns hash of the file (considers file content, size & transferId)
    */
   uploadFile(
     file: File,

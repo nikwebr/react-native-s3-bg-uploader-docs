@@ -1,5 +1,5 @@
 ---
-title: API
+title: API Reference
 description: Functions and types exposed by this library
 ---
 
@@ -53,4 +53,21 @@ type ProgressCallback = (
 | `FAILED`                  | Processing or upload failed for at least one file. Can be retried by calling `resume()`                                                           |
 
 ## S3BgUploaderResumeError
+
+<div className="not-prose flex items-center gap-2 text-sm my-3">
+  <span className="text-muted-foreground">Thrown by</span>
+  <a href="#type-table-s3-bg-uploader.types.ts-NativeS3BgUploaderAPI-resume" className="font-mono text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded hover:bg-primary/20 transition-colors">`resume()`</a>
+</div>
+
+Indicates that there are stale files in the session which need to be re-provided by the user by calling `uploadFile()` again. Files become stale after an app restart for example.
 <auto-type-table path="../../test/s3-bg-uploader.types.ts" name="S3BgUploaderResumeError" />
+
+## S3BgUploaderDuplicateFileError
+
+<div className="not-prose flex items-center gap-2 text-sm my-3">
+  <span className="text-muted-foreground">Thrown by</span>
+  <a href="#type-table-s3-bg-uploader.types.ts-NativeS3BgUploaderAPI-uploadFile" className="font-mono text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded hover:bg-primary/20 transition-colors">`uploadFile()`</a>
+</div>
+
+Indicates that a file with the same hash (considering file content, file size and transferId) already exists in the session.
+<auto-type-table path="../../test/s3-bg-uploader.types.ts" name="S3BgUploaderDuplicateFileError" />

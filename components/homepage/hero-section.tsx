@@ -32,7 +32,7 @@ export function HeroSection() {
   }, [])
 
   const handleCopy = () => {
-    navigator.clipboard.writeText("npm install react-native-s3-upload")
+    navigator.clipboard.writeText("npm i react-native-s3-bg-uploader react-native-nitro-modules")
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }

@@ -4,35 +4,17 @@ import { useState } from "react"
 import { Button } from "@/components/homepage/ui/button"
 import { Check, Copy } from "lucide-react"
 
-const codeExample = `import { S3Upload } from 'react-native-s3-upload';
+const codeExample = `import { S3BgUploader } from 'react-native-s3-bg-uploader';
 
-// Create an upload task
-const upload = S3Upload.create({
-  file: selectedFile,
-  presignedUrl: 'https://your-bucket.s3.amazonaws.com/...',
-  
-  // Enable background execution
-  background: true,
-  
-  // Track progress
-  onProgress: (progress) => {
-    console.log(\`\${progress.percentage}% complete\`);
-  },
-  
-  // Handle completion
-  onComplete: (response) => {
-    console.log('Upload finished!', response.etag);
-  },
-});
+// enqueue files
+S3BgUploader.uploadFile(file1, "transfer1"); 
+S3BgUploader.uploadFile(file2, "transfer1"); 
 
-// Start the upload
-await upload.start();
+// start the upload
+S3BgUploader.resume();
 
 // Pause when needed
-upload.pause();
-
-// Resume later
-upload.resume();`
+upload.pause();`
 
 export function CodeExample() {
   const [copied, setCopied] = useState(false)

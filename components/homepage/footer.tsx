@@ -19,21 +19,9 @@ export function Footer() {
               <span className="font-semibold text-foreground">react-native-s3-bg-uploader</span>
             </div>
             <p className="text-muted-foreground text-sm max-w-sm leading-relaxed">
-              The most reliable way to upload files to S3 from your React Native app.
+              Seamless file uploads that continue even when your app goes to background. 
               Open source and community driven.
             </p>
-            <div className="flex items-center gap-2 mt-6">
-              <Button variant="ghost" size="icon" asChild>
-                <a href="https://github.com" target="_blank" rel="noopener noreferrer">
-                  dd
-                </a>
-              </Button>
-              <Button variant="ghost" size="icon" asChild>
-                <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">
-                  ss
-                </a>
-              </Button>
-            </div>
           </div>
 
           {/* Links */}
@@ -41,23 +29,18 @@ export function Footer() {
             <h3 className="font-semibold text-foreground mb-4">Documentation</h3>
             <ul className="space-y-3">
               <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <a href="/docs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   Getting Started
                 </a>
               </li>
               <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <a href="/docs/api" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   API Reference
                 </a>
               </li>
               <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Examples
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Migration Guide
+                <a href="https://github.com/nikwebr/react-native-s3-bg-uploader/tree/master/example" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Example App
                 </a>
               </li>
             </ul>
@@ -67,23 +50,8 @@ export function Footer() {
             <h3 className="font-semibold text-foreground mb-4">Community</h3>
             <ul className="space-y-3">
               <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <a href="https://github.com/nikwebr/react-native-s3-bg-uploader/issues" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   GitHub Discussions
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Discord
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Stack Overflow
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Contributing
                 </a>
               </li>
             </ul>
@@ -95,11 +63,8 @@ export function Footer() {
             © 2026 react-native-s3-bg-uploader. MIT License.
           </p>
           <div className="flex items-center gap-6">
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Privacy
-            </a>
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Terms
+            <a href="https://ysendit.com/imprint" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Imprint
             </a>
           </div>
         </div>
