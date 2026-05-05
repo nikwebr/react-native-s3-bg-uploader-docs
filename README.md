@@ -1,6 +1,6 @@
 # react-native-s3-bg-uploader-docs
 
-This is the documentation page for [react-native-s3-bg-uploader](https://github.com/nikwebr/react-native-s3-bg-uploader)
+This is the documentation page for [react-native-s3-bg-uploader](https://github.com/nikwebr/react-native-s3-bg-uploader).
 
 This is a Next.js application generated with
 [Create Fumadocs](https://github.com/fuma-nama/fumadocs).
