@@ -58,7 +58,8 @@ Initiates a multipart upload for a single file.
   <span className="text-muted-foreground">{`{getUploadUrlsApi}/`}</span>
 </div>
 
-Returns presigned S3 URLs for a set of parts.
+Should return URLs for a set of parts. These urls will be used by the library for uploading the file parts.
+For example, you could return presigned S3 multipart upload urls.
 
 **Request Body (JSON)**
 

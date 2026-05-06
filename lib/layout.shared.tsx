@@ -1,5 +1,5 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
-import { gitConfig } from './shared';
+import { gitConfig, docsRoute } from './shared';
 import Image from 'next/image';
 import logo from '../icon.png';
 
@@ -21,6 +21,7 @@ export function baseOptions(): BaseLayoutProps {
         </span>
       ),
     },
+    links: [{ text: 'Documentation', url: docsRoute }],
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
   };
 }

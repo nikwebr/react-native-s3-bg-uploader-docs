@@ -3,6 +3,7 @@ import type { MDXComponents } from 'mdx/types';
 import { createGenerator, createFileSystemGeneratorCache } from 'fumadocs-typescript';
 import { AutoTypeTable, type AutoTypeTableProps } from 'fumadocs-typescript/ui';
 import { TypeTable } from 'fumadocs-ui/components/type-table';
+import { Mermaid } from '@/components/mermaid';
 
 const generator = createGenerator({
   // set a cache, necessary for serverless platform like Vercel
@@ -16,6 +17,7 @@ export function getMDXComponents(components?: MDXComponents) {
       <AutoTypeTable {...props} generator={generator} />
     ),
     TypeTable,
+    Mermaid,
     ...components,
   } satisfies MDXComponents;
 }
