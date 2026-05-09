@@ -84,7 +84,7 @@ interface BaseUploaderAPI {
   cancel(): void
 
   /**
-   * Set the.
+   * Set the backend http endpoints.
    * The endpoints must accept and return the data documented [here](https://uploader.ysendit.com/docs/backend)
    * Must be called before calling `resume()`.
    */
