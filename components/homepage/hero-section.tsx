@@ -5,7 +5,7 @@ import { Button } from "@/components/homepage/ui/button"
 import { Badge } from "@/components/homepage/ui/badge"
 import { DataFlowAnimation } from "./data-flow-animation"
 import { BookOpen, ChevronDown, Copy, Check } from "lucide-react"
-import { version } from '@/lib/shared';
+import { version } from '@/lib/version';
 
 export function HeroSection() {
   const [copied, setCopied] = useState(false)

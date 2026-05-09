@@ -4,16 +4,16 @@ description: Functions and types exposed by this library
 ---
 
 ## NativeS3BgUploaderAPI
-<auto-type-table path="../../test/s3-bg-uploader.types.ts" name="NativeS3BgUploaderAPI" />
+<auto-type-table path="../../lib/s3-bg-uploader.types.ts" name="NativeS3BgUploaderAPI" />
 
 ## WebS3BgUploaderAPI
-<auto-type-table path="../../test/s3-bg-uploader.types.ts" name="WebS3BgUploaderAPI" />
+<auto-type-table path="../../lib/s3-bg-uploader.types.ts" name="WebS3BgUploaderAPI" />
 
 ## UploadProgress
-<auto-type-table path="../../test/s3-bg-uploader.types.ts" name="UploadProgress" />
+<auto-type-table path="../../lib/s3-bg-uploader.types.ts" name="UploadProgress" />
 
 ## AggregateProgress
-<auto-type-table path="../../test/s3-bg-uploader.types.ts" name="AggregateProgress" />
+<auto-type-table path="../../lib/s3-bg-uploader.types.ts" name="AggregateProgress" />
 
 ## ProgressCallback
 ```ts
@@ -60,7 +60,7 @@ type ProgressCallback = (
 </div>
 
 Indicates that there are stale files in the session which need to be re-provided by the user by calling `uploadFile()` again. Files become stale after an app restart for example.
-<auto-type-table path="../../test/s3-bg-uploader.types.ts" name="S3BgUploaderResumeError" />
+<auto-type-table path="../../lib/s3-bg-uploader.types.ts" name="S3BgUploaderResumeError" />
 
 ## S3BgUploaderDuplicateFileError
 
@@ -70,4 +70,4 @@ Indicates that there are stale files in the session which need to be re-provided
 </div>
 
 Indicates that a file with the same hash (considering file content, file size and transferId) already exists in the session.
-<auto-type-table path="../../test/s3-bg-uploader.types.ts" name="S3BgUploaderDuplicateFileError" />
+<auto-type-table path="../../lib/s3-bg-uploader.types.ts" name="S3BgUploaderDuplicateFileError" />
