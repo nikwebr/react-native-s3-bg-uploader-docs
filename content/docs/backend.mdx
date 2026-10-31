@@ -138,3 +138,23 @@ Finalizes the multipart upload after all parts have been uploaded.
 **Response**
 
 The response body is ignored. The library only expects an HTTP `2xx` status code.
+
+---
+
+## Encrypted uploads
+
+`encryptAndUploadFile()` uses the same endpoints and the same request and response shapes as
+`uploadFile()`. No endpoint needs to change, and the backend never receives key material or
+plaintext.
+
+Two details differ, because the library uploads ciphertext:
+
+- `fileHash` and `fileSize` in `startUpload` describe the **plaintext** file. The object stored in
+the bucket is larger: each part gains the encryptor's per-part overhead, and the built-in cipher
+appends a descriptor to the final part.
+- `partSize` returned by `startUpload` is the maximum **ciphertext** size of one part. The uploader
+reduces the plaintext chunk size accordingly, so the number of parts can be higher than
+`ceil(fileSize / partSize)`. If `partSize` is not larger than the encryptor's overhead plus
+descriptor size, upload preparation fails instead of uploading.
+
+See [End-to-end encryption](/docs/encryption) for the wire format and custom encryptor contract.

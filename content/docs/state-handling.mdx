@@ -113,6 +113,14 @@ The required flow after every app start that has a prior session:
 Files that were re-provided but are already `Completed` are returned immediately with their existing
 `fileKey` and skip the upload entirely.
 
+### Encrypted files
+
+Encrypted uploads follow the same re-provisioning flow, but the encryption configuration is not
+persisted. Re-provide an encrypted file with `encryptAndUploadFile()` and the **original key and
+nonce**; calling plain `uploadFile()` for it, or calling `resume()` while it is missing its
+encryption configuration, fails instead of uploading plaintext. See
+[End-to-end encryption](/docs/encryption).
+
 ## Upload resumption
 
 Because every completed chunk's ETag is persisted immediately after the S3 part upload succeeds,
