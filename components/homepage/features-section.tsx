@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/homepage/ui/card"
-import { Pause, Play, Moon, Link2, Shield, Loader, Component } from "lucide-react"
+import { Pause, Play, Moon, Link2, Shield, Loader, Component, Lock } from "lucide-react"
 
 const features = [
   {
@@ -21,6 +21,12 @@ const features = [
     title: "Multipart Uploads",
     description:
       "Large files are automatically split into parts for faster, more reliable uploads with automatic retry.",
+  },
+  {
+    icon: Lock,
+    title: "Client-Side Encryption",
+    description:
+      "Files can be encrypted on the device before upload, fully in the background. The default cipher is XChaCha20-Poly1305 but the library also supports custom ciphers.",
   },
   {
     icon: Loader,
