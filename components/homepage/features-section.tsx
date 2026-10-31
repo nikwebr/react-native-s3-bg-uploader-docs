@@ -28,12 +28,6 @@ const features = [
     description:
       "Real-time progress updates with relevant data. On native platforms, a progress notification is shown.",
   },
-    {
-    icon: Shield,
-    title: "Presigned URL Support",
-    description:
-      "You provide the upload urls to the library. In your backend, you can generate presigned urls.",
-  },
   {
     icon: Lock,
     title: "Client-Side Encryption",
