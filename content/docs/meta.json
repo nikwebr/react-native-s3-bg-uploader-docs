@@ -1,3 +1,3 @@
 {
-  "pages": ["index", "api", "backend", "state-handling", "background", "roadmap", "changelog"]
+  "pages": ["index", "api", "backend", "state-handling", "encryption", "background", "roadmap", "changelog"]
 }

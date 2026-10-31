@@ -1,0 +1,157 @@
+---
+title: End-to-end encryption
+description: Encrypt file chunks on the device before they are uploaded, with the built-in cipher or your own scheme
+---
+
+`encryptAndUploadFile()` encrypts each chunk locally on iOS, Android and web before any file
+content leaves the device. `uploadFile()` stays unencrypted, so one session can contain both
+encrypted and plaintext files.
+
+## Built-in cipher
+
+The built-in cipher is **XChaCha20-Poly1305**, so it works on every platform without registering
+anything:
+
+- Each file part is encrypted as an AEAD chunk. The Poly1305 tag detects tampering.
+- The key is 32 bytes, provided as **64 hex characters**.
+- The base nonce is 24 bytes, provided as **48 hex characters**.
+- A per-part nonce is derived deterministically from the base nonce and the 1-based part number,
+  and the part number is authenticated as additional data. Retried or resumed parts are
+  re-encrypted identically, and reordered parts fail authentication.
+- An authenticated descriptor is appended to the final data part. It records the number of data
+  parts and the effective part size, so a decoder only needs the key and base nonce to decode
+  the object.
+
+```ts
+const keyHex = '…'   // 64 hex chars = 32 bytes
+const nonceHex = '…' // 48 hex chars = 24 bytes
+
+await S3BgUploader.encryptAndUploadFile(
+  path,        // string path on iOS/Android, File on web
+  transferId,
+  keyHex,
+  nonceHex,
+  { userId: '42' }, // optional userParams, same as uploadFile()
+)
+```
+
+Invalid key or nonce values are rejected: the strings must have exactly the documented length and
+contain only hex characters. On native platforms `encryptAndUploadFile()` requires a string file
+path; on web it requires a `File` value.
+
+## What the library does not do
+
+The uploader encrypts uploads; it does not manage keys or decrypt objects.
+
+- Your app must generate, store and deliver keys to the intended recipient without exposing them
+  to the upload backend or the storage provider.
+- Use a unique nonce for every new upload under a key. Reuse the original key and nonce only when
+  retrying or resuming that same upload — the deterministic per-part nonce assumes that pairing.
+- To read an uploaded object back, you must decrypt it yourself (or with your own tooling, e.g.
+  the standalone verifier in the package's `custom-encryption-example/tools/decrypt`).
+
+## Resume and app restarts
+
+Encryption is resumable because every part is derived from `key + base nonce + part number` alone.
+While the process stays alive, the encryptor instance is kept with that file's session entry, so
+pause/resume keeps using the same key.
+
+Keys and encryptor instances are **not persisted**:
+
+- After an app or browser restart, re-provide the file with `encryptAndUploadFile()` and the
+  original key and nonce.
+- Resuming an encrypted file without its encryption configuration fails instead of uploading
+  plaintext. Re-providing it with plain `uploadFile()` also fails.
+- Background uploads require the same encryption configuration; they never fall back to plaintext.
+
+## Custom encryptors
+
+A custom scheme is bound to one upload at a time: the uploader calls your factory once per
+`encryptAndUploadFile()` with that upload's decoded key and nonce. Two files in flight may
+therefore use different keys. Returning `null` from the factory makes that upload use the built-in
+XChaCha20-Poly1305 cipher instead.
+
+### Native (iOS and Android)
+
+Register the encryptor once at startup from your native code, or from JavaScript if you prefer to
+register late:
+
+```swift
+CustomEncryptor.register()                                 // iOS / Swift
+HybridS3BgUploader.registerCustomEncryptor(vtablePointer)  // Android / Kotlin
+S3BgUploader.registerCustomEncryptor(vtablePointer)        // JS, any platform
+```
+
+The registration passes only the vtable — no key material. The host library must be compiled
+separately (the uploader does not need to be rebuilt) and implement the stable FFI interface. Every
+field of the table is read:
+
+| Field | Meaning |
+| --- | --- |
+| `create(key, key_len, nonce, nonce_len)` | Build the encryptor for **one upload** from the key material of that `encryptAndUploadFile()` call. Return `NULL` to use the built-in cipher for that upload. |
+| `encrypt_chunk(ctx, input, input_len, part_number)` | Encrypt one S3 part and return a heap-allocated result. |
+| `free(ctx, data, len, capacity)` | Release a result. The uploader copies the bytes out first, so the host may use any allocator. |
+| `destroy(ctx)` | Release a context built by `create` — exactly once per upload, when the file's session entry is dropped (finished, cancelled or evicted). |
+| `ciphertext_overhead` | Bytes the scheme adds per chunk (tag, IV prefix, …). The engine reads `part_size - overhead` plaintext per part so the ciphertext fills the URL slot exactly. Use `0` for a stream cipher. |
+| `has_footer` | `true` if the wire format ends with a synthesised descriptor appended to the last data part. |
+| `footer_len` | Bytes that descriptor occupies. Must be non-zero when `has_footer` is `true`. |
+| `compute_footer(ctx, n_data_parts, effective_part_size)` | Build the descriptor. Only called when `has_footer` is `true`. Rust hosts use `no_descriptor` when it is `false`; C/C++/Swift hosts may pass `NULL`. |
+
+On web, `registerCustomEncryptor()` is a no-op, because a browser has no second native binary.
+Native builds reject `registerWebEncryptor()`.
+
+### Web
+
+Register a JavaScript factory with the same per-upload contract. The uploader calls it once per
+upload inside its worker, with that upload's key and nonce:
+
+```ts
+await S3BgUploader.registerWebEncryptor({
+  source: myFactory.toString(), // (key: Uint8Array, nonce: Uint8Array) => { encryptChunk, computeFooter? }
+  overhead: 16,
+  hasFooter: true,
+  footerLen: 28,
+})
+
+await S3BgUploader.encryptAndUploadFile(file, transferId, keyHex, nonceHex)
+```
+
+<auto-type-table path="../../lib/s3-bg-uploader.types.ts" name="WebEncryptorOptions" />
+
+<auto-type-table path="../../lib/s3-bg-uploader.types.ts" name="WebEncryptorImpl" />
+
+Because the factory source is evaluated inside the worker, it must be self-contained — no imports
+and no closures over app state. A strict Content Security Policy must allow `unsafe-eval` for
+worker scripts (the default in local development). Callbacks may return Promises, so
+`crypto.subtle` can be used directly.
+
+### The descriptor rule
+
+The descriptor (footer) is **never an S3 part of its own** — it is appended to the final data part.
+S3 requires every part except the last to be at least 5 MiB, so a tiny trailing part would demote
+the real last part to an intermediate one and `CompleteMultipartUpload` would fail with
+`EntityTooSmall`. Riding inside the last part keeps that part last, where any size is allowed.
+
+### What a custom scheme cannot do
+
+The engine hands over one S3 part at a time — it seeks to `(part_number - 1) * part_size`, reads
+that part, and keeps at most a few parts in flight. The descriptor callback sees only
+`n_data_parts` and `effective_part_size`, never the data.
+
+A scheme that needs a single pass over the whole file therefore cannot be expressed:
+
+- block chaining across parts (e.g. CBC/CTR state carried from part to part),
+- a global trailer or digest computed over the entire plaintext,
+- anything that needs the complete ciphertext before it can emit a part.
+
+Part independence is deliberate: every part must be re-encryptable from `key + base nonce + part
+number` alone, which is what makes pause/resume cheap and deterministic.
+
+Anything that works part-by-part is expressible: an AEAD tag (`overhead` = tag size), an IV prefix
+(`overhead` = IV size), or a stream cipher (`overhead = 0`), with or without a descriptor.
+
+### Worked example
+
+`custom-encryption-example/` in the package repository contains a complete AES-256-GCM custom
+encryptor for iOS, Android and web, including the native FFI bridges, a browser worker encryptor,
+and `tools/decrypt` — a standalone verifier that decodes an uploaded object from the wire format.
