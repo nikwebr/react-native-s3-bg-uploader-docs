@@ -23,12 +23,6 @@ const features = [
       "Large files are automatically split into parts for faster, more reliable uploads with automatic retry.",
   },
   {
-    icon: Lock,
-    title: "Client-Side Encryption",
-    description:
-      "Files can be encrypted on the device before upload, fully in the background. The default cipher is XChaCha20-Poly1305 but the library also supports custom ciphers.",
-  },
-  {
     icon: Loader,
     title: "Progress Tracking",
     description:
@@ -41,10 +35,16 @@ const features = [
       "You provide the upload urls to the library. In your backend, you can generate presigned urls.",
   },
   {
+    icon: Lock,
+    title: "Client-Side Encryption",
+    description:
+      "Files can be encrypted on the device before upload, fully in the background. The default cipher is XChaCha20-Poly1305 but the library also supports custom ciphers.",
+  },
+  {
     icon: Link2,
     title: "S3 API Compatible",
     description:
-      "Works with Amazon S3, MinIO, DigitalOcean Spaces, Backblaze B2, and any other S3-compatible storage.",
+      "Works with any S3-compatible object storage that supports presigned upload urls. With presigned urls, your backend stays in full control over who is authrized to upload.",
   }
 ]
 
