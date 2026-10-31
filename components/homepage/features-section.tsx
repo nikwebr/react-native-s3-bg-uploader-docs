@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/homepage/ui/card"
-import { Pause, Play, Moon, Link2, Shield, Loader, Component, Lock, KeyRound } from "lucide-react"
+import { Pause, Play, Moon, Link2, Shield, Loader, Component, Lock } from "lucide-react"
 
 const features = [
   {
@@ -26,13 +26,7 @@ const features = [
     icon: Lock,
     title: "Client-Side Encryption",
     description:
-      "Files are encrypted on the device before anything is uploaded. The built-in XChaCha20-Poly1305 cipher works on iOS, Android and web out of the box.",
-  },
-  {
-    icon: KeyRound,
-    title: "Custom Ciphers",
-    description:
-      "Bring your own encryption scheme. Register a native encryptor for iOS and Android, or a JavaScript one on web.",
+      "Files can be encrypted on the device before upload, fully in the background. The default cipher is XChaCha20-Poly1305 but the library also supports custom ciphers.",
   },
   {
     icon: Loader,
