@@ -38,6 +38,30 @@ A `source.config.ts` config file has been included, you can customise different 
 
 Read the [Introduction](https://fumadocs.dev/docs/mdx) for further details.
 
+## GitHub Agentic Workflow
+
+The `agent-serviceuser` workflow uses the same gh-aw setup as the package
+repository, without its post-merge documentation-sync agent. Assign an issue or
+pull request to `agent-serviceuser`, request its review, or mention
+`@agent-serviceuser` in a comment. New comments and reviews on threads assigned
+to the agent also trigger it; it acts only on requests from users with admin,
+maintainer, or write access.
+
+Configure these repository Actions secrets before running the agent:
+
+- `DEEPSEEK_API_KEY`: API key for the DeepSeek model used by the Pi engine.
+- `GH_TOKEN`: token for `agent-serviceuser` with access to this repository and
+  permission to write issues, pull requests, and repository contents.
+
+Edit `.github/workflows/agent-serviceuser.md`, then regenerate and commit its
+`.lock.yml` using gh-aw v0.93.5:
+
+```bash
+gh aw compile agent-serviceuser
+```
+
+Do not edit the generated lock workflow directly.
+
 ## Learn More
 
 To learn more about Next.js and Fumadocs, take a look at the following
