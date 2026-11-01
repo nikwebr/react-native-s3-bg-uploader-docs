@@ -29,9 +29,18 @@ Initiates a multipart upload for a single file.
 | Field | Type | Description |
 | --- | --- | --- |
 | `fileName` | `string` | Original file name |
-| `fileHash` | `string` | xxHash of the file |
-| `fileSize` | `number` | File size in bytes |
+| `fileHash` | `string` | Hash of the **unencrypted** file. Omitted when `sendFileHash` is disabled (see below) |
+| `fileSize` | `number` | Size of the local, **unencrypted** file in bytes |
+| `encryption` | `object` | Only present for encrypted uploads: ciphertext format so the backend can derive the stored size. See [Encrypted uploads](#encrypted-uploads) |
 | `...userParams` | `object` | Any additional params you passed via `uploadFile`, merged flat into the body |
+
+`fileName`, `fileHash`, `fileSize` and `encryption` are reserved: values with those names inside
+`...userParams` are ignored, so a caller cannot override the real file size or hash.
+
+`fileHash` is sent by default. Pass `false` as the fourth argument of
+`setConfig(startUploadApi, getUploadUrlsApi, completeApi, sendFileHash)` to omit it from this body.
+The hash is still computed locally over the plaintext file and used for duplicate detection and
+resume, so omitting it only changes what the backend receives.
 
 **Response (JSON)**
 
@@ -147,14 +156,47 @@ The response body is ignored. The library only expects an HTTP `2xx` status code
 `uploadFile()`. No endpoint needs to change, and the backend never receives key material or
 plaintext.
 
-Two details differ, because the library uploads ciphertext:
+For encrypted uploads the following details differ, because the library uploads ciphertext.
 
-- `fileHash` and `fileSize` in `startUpload` describe the **plaintext** file. The object stored in
+`fileHash` and `fileSize` in `startUpload` describe the **plaintext** file. The object stored in
 the bucket is larger: each part gains the encryptor's per-part overhead, and the built-in cipher
-appends a descriptor to the final part.
-- `partSize` returned by `startUpload` is the maximum **ciphertext** size of one part. The uploader
-reduces the plaintext chunk size accordingly, so the number of parts can be higher than
-`ceil(fileSize / partSize)`. If `partSize` is not larger than the encryptor's overhead plus
-descriptor size, upload preparation fails instead of uploading.
+appends a descriptor to the final part. `fileSize` therefore stays the plaintext size, which
+remains meaningful for quotas and UI.
+
+`partSize` returned by `startUpload` is the maximum **ciphertext** size of one part. The uploader
+reduces the plaintext chunk size to `partSize - reserved`, so the number of parts can be higher
+than `ceil(fileSize / partSize)`. If `partSize` is not larger than `reserved`, upload preparation
+fails instead of uploading.
+
+### Deriving the stored size
+
+For encrypted uploads the `startUpload` body additionally carries an `encryption` object with the
+format numbers of the scheme that encrypts this upload. The client does not send the stored size;
+the backend derives it from the `partSize` it returns:
+
+```json
+{
+  "fileName": "video.mp4",
+  "fileHash": "a1b2c3d4e5f6...",
+  "fileSize": 31457280,
+  "encryption": { "overhead": 16, "hasFooter": true, "footerLen": 28 }
+}
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `encryption.overhead` | `number` | Ciphertext bytes added to every part (AEAD tag, IV prefix, …) |
+| `encryption.hasFooter` | `boolean` | Whether the wire format ends with a descriptor inside the final data part |
+| `encryption.footerLen` | `number` | Bytes that descriptor occupies |
+
+```text
+reserved     = overhead + (hasFooter ? footerLen : 0)  // reserved in every part
+effective    = partSize - reserved                     // plaintext bytes per part
+dataParts    = ceil(fileSize / effective)              // at least 1 if hasFooter
+storedBytes  = fileSize + overhead * dataParts + (hasFooter ? footerLen : 0)
+```
+
+Both the per-part overhead and the descriptor are reserved in every part, because the descriptor
+rides inside the last data part.
 
 See [End-to-end encryption](/docs/encryption) for the wire format and custom encryptor contract.
