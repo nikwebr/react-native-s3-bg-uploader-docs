@@ -39,6 +39,21 @@ Invalid key or nonce values are rejected: the strings must have exactly the docu
 contain only hex characters. On native platforms `encryptAndUploadFile()` requires a string file
 path; on web it requires a `File` value.
 
+## Sizes, hashes and progress
+
+Encryption changes the size of the object that is stored, so the uploader reports wire sizes:
+
+- `fileHash` is computed over the **unencrypted** file, so duplicate detection and resume behave
+  the same for `uploadFile()` and `encryptAndUploadFile()`. `setConfig(..., sendFileHash)` defaults
+  to `true`; pass `false` to keep the hash local and omit it from the `startUpload()` body.
+- `fileSize` sent to `startUpload()` is always the plaintext size of the local file. For encrypted
+  uploads the body also carries an `encryption` object (`overhead`, `hasFooter`, `footerLen`) so
+  the backend derives the stored ciphertext size from the `partSize` it returns. The
+  [backend guide](/docs/backend#encrypted-uploads) shows the formula.
+- `totalBytes` and `uploadedBytes` in progress callbacks count bytes of the uploaded object, and
+  `percentage` is relative to it. For encrypted uploads that is the ciphertext size — including
+  after a pause, resume or app restart — not the size of the local file.
+
 ## What the library does not do
 
 The uploader encrypts uploads; it does not manage keys or decrypt objects.
@@ -97,6 +112,10 @@ field of the table is read:
 | `footer_len` | Bytes that descriptor occupies. Must be non-zero when `has_footer` is `true`. |
 | `compute_footer(ctx, n_data_parts, effective_part_size)` | Build the descriptor. Only called when `has_footer` is `true`. Rust hosts use `no_descriptor` when it is `false`; C/C++/Swift hosts may pass `NULL`. |
 
+`ciphertext_overhead`, `has_footer` and `footer_len` also describe the format to the backend: they
+are sent in the `startUpload` body so it can derive the stored ciphertext size, and they drive the
+`totalBytes` / `uploadedBytes` values reported to progress callbacks.
+
 On web, `registerCustomEncryptor()` is a no-op, because a browser has no second native binary.
 Native builds reject `registerWebEncryptor()`.
 
@@ -115,6 +134,10 @@ await S3BgUploader.registerWebEncryptor({
 
 await S3BgUploader.encryptAndUploadFile(file, transferId, keyHex, nonceHex)
 ```
+
+The `overhead`, `hasFooter` and `footerLen` values describe the format: they are sent to the backend
+in the `startUpload` body and used to report ciphertext-sized progress, exactly like the native
+vtable fields.
 
 <auto-type-table path="../../lib/s3-bg-uploader.types.ts" name="WebEncryptorOptions" />
 
@@ -142,7 +165,11 @@ A scheme that needs a single pass over the whole file therefore cannot be expres
 
 - block chaining across parts (e.g. CBC/CTR state carried from part to part),
 - a global trailer or digest computed over the entire plaintext,
-- anything that needs the complete ciphertext before it can emit a part.
+- anything that needs the complete ciphertext before it can emit a part,
+- a ciphertext length that is not a fixed function of the plaintext length — compression, padding
+  to a data-dependent boundary, or a descriptor whose length depends on the data. The engine
+  requires `part_size + overhead` per part plus a descriptor of fixed length, and the backend
+  derives the stored size from those same numbers.
 
 Part independence is deliberate: every part must be re-encryptable from `key + base nonce + part
 number` alone, which is what makes pause/resume cheap and deterministic.
