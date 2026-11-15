@@ -136,3 +136,29 @@ On resume the library:
 
 Progress reporting after a restart starts from the already-committed byte count, so the progress
 shown to the user is cumulative and correct.
+
+## Pause, resume and progress
+
+`pause()` stops dispatching new parts: no further parts start, and the multipart `complete` call is
+deferred until `resume()`. Resuming continues the same run and the same multipart upload ID, so parts
+that S3 already confirmed are never sent again.
+
+What happens to a part that is already in transfer when you pause depends on the platform:
+
+| Platform | In-flight parts on `pause()` | Progress while paused |
+| --- | --- | --- |
+| iOS / Android | The requests are held instead of cancelled: iOS suspends the `NSURLSession` tasks, Android stops reading further body bytes. `resume()` continues those same requests. | Stays at the last sent byte count. |
+| Web | A browser cannot suspend an `XMLHttpRequest`, so every part still in transfer is aborted. `resume()` uploads those parts again. | Drops back to the confirmed parts. |
+
+A failed request cannot be revived — parts that failed are uploaded again by `resume()` or the retry
+logic — and `cancel()` or a failed upload still aborts outstanding requests.
+
+`uploadedBytes` counts bytes of the request that is currently in transfer, so progress can move
+backwards when bytes stop being confirmed: at a pause, at a failed request, or at a retry boundary.
+Until every part has been acknowledged by S3, in-flight bytes never lift progress above 99%, while
+confirmed parts keep their exact byte count (which can already be above 99% when only a small final
+part remains). Progress reaches 100% once all parts are acknowledged; the file becomes `COMPLETED`
+only after the backend's `complete` call has succeeded.
+
+Pausing or holding a request does not guarantee that the underlying connection survives loss of
+connectivity or a server timeout, and it does not remove a storage provider's completion wait.

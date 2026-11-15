@@ -7,6 +7,9 @@ description: Things to consider when backgrounded
 On iOS, a BGContinuedProcessingTask is used to keep the library uploading in the background.
 The OS cancels such tasks if system ressources are few. For example, a task will be canceled when opening the camera app.
 If the task is cancelled, the upload needs to be resumed by calling the `resume()` method.
+When every part has already been uploaded and the library is only waiting for the final multipart
+`complete` call, an expiring task waits for that call to finish instead of pausing, so the upload can
+still reach `COMPLETED`.
 
 ## Executing JS code while backgrounded
 The progress callback also fires while the app is in the background. The JS side can listen to progress events and react on it.
