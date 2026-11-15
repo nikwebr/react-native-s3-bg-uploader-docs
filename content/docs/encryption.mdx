@@ -44,8 +44,9 @@ path; on web it requires a `File` value.
 Encryption changes the size of the object that is stored, so the uploader reports wire sizes:
 
 - `fileHash` is computed over the **unencrypted** file, so duplicate detection and resume behave
-  the same for `uploadFile()` and `encryptAndUploadFile()`. `setConfig(..., sendFileHash)` defaults
-  to `true`; pass `false` to keep the hash local and omit it from the `startUpload()` body.
+  the same for `uploadFile()` and `encryptAndUploadFile()`. `sendFileHash` (the fifth argument of
+  `setConfig(startUploadApi, getUploadUrlsApi, completeApi, cancelApi, sendFileHash)`) defaults to
+  `true`; pass `false` to keep the hash local and omit it from the `startUpload()` body.
 - `fileSize` sent to `startUpload()` is always the plaintext size of the local file. For encrypted
   uploads the body also carries an `encryption` object (`overhead`, `hasFooter`, `footerLen`) so
   the backend derives the stored ciphertext size from the `partSize` it returns. The
