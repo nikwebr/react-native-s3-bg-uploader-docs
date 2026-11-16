@@ -48,7 +48,8 @@ derived from all individual file states — this drives the system notification 
 
 ## File hash
 
-Every file is identified by a **Murmur3 128-bit hash** that is computed once when `uploadFile()` is called
+Every file is identified by a **Murmur3 128-bit hash** that is computed when `uploadFile()` or
+`encryptAndUploadFile()` is called
 and stored alongside the file entry. The hash is deterministic across app restarts and is used as the
 primary key for deduplication and resume matching.
 
@@ -56,13 +57,18 @@ primary key for deduplication and resume matching.
 - The `transferId` — so the same file in different transfers produces a different hash
 - Up to three file samples (first 16 KB, middle 16 KB, last 16 KB; or the whole file if < 128 KB)
 - The file size encoded as a varint
+- The optional `hashSalt` — so another copy in the same transfer can have a distinct hash
 
 Sampling instead of hashing the full file keeps the cost negligible even for multi-gigabyte files
 while still being collision-resistant for practical use.
 
 The session maintains an in-memory `hash → fileKey` index so dedup lookups are O(1).
-When a file with the same hash is already `Completed`, `uploadFile()` returns the existing key immediately
-without re-uploading. When the file is in a resumable state, the upload is continued rather than restarted.
+When a file with the same hash is already `Completed`, the upload method returns its existing
+`fileHash` immediately without re-uploading. After a restart, re-providing a missing file with
+the same hash reattaches it to its saved entry. Adding a file whose hash is already active
+or pending throws `S3BgUploaderDuplicateFileError`.
+
+To add another copy, pass a fresh `hashSalt` with `uploadFile`. Save that salt in your app and reuse it for resume. Changing it creates a new file identity.
 
 ## Session restoration after app restart
 
@@ -104,20 +110,22 @@ If it is not, `resume()` throws an `S3BgUploaderResumeError` listing how many fi
 
 The required flow after every app start that has a prior session:
 
-1. Call `uploadFile(filePath, transferId, ...)` for each file that was being uploaded.
+1. Call `uploadFile(filePath, transferId, userParams, hashSalt)` for each file that was being
+   uploaded, using its original `transferId` and salt. Omit the salt if the original upload
+   did not use one.
 2. The library computes the hash, finds the matching entry in the session, and removes it from
    `files_needing_provision`.
 3. Once all files have been re-provided, call `resume()` — the library validates that
    `files_needing_provision` is empty and then starts uploading.
 
 Files that were re-provided but are already `Completed` are returned immediately with their existing
-`fileKey` and skip the upload entirely.
+`fileHash` and skip the upload entirely.
 
 ### Encrypted files
 
 Encrypted uploads follow the same re-provisioning flow, but the encryption configuration is not
 persisted. Re-provide an encrypted file with `encryptAndUploadFile()` and the **original key and
-nonce**; calling plain `uploadFile()` for it, or calling `resume()` while it is missing its
+nonce**, plus the original `transferId` and `hashSalt` if one was used; calling plain `uploadFile()` for it, or calling `resume()` while it is missing its
 encryption configuration, fails instead of uploading plaintext. See
 [End-to-end encryption](/docs/encryption).
 

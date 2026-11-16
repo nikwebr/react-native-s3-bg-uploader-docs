@@ -32,6 +32,7 @@ await S3BgUploader.encryptAndUploadFile(
   keyHex,
   nonceHex,
   { userId: '42' }, // optional userParams, same as uploadFile()
+  'encrypted-copy-1', // optional hashSalt; save and reuse for resume
 )
 ```
 
@@ -75,7 +76,7 @@ pause/resume keeps using the same key.
 Keys and encryptor instances are **not persisted**:
 
 - After an app or browser restart, re-provide the file with `encryptAndUploadFile()` and the
-  original key and nonce.
+  original key and nonce, the same `transferId`, and the original `hashSalt` if one was used.
 - Resuming an encrypted file without its encryption configuration fails instead of uploading
   plaintext. Re-providing it with plain `uploadFile()` also fails.
 - Background uploads require the same encryption configuration; they never fall back to plaintext.
